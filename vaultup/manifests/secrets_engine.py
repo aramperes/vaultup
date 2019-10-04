@@ -21,6 +21,10 @@ class SecretsEngineManifest(ManifestItem):
             return None
 
         return {
+            "type": self.data["type"],
             "description": self.data.get("description"),
-            "type": self.data["type"]
+            "config": self.data.get("config"),
+            "local": self.data.get("local"),
+            "options": self.data.get("options"),
+            "seal_wrap": self.data.get("seal_wrap"),
         }

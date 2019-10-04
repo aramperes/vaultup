@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Dict, Optional, List
 
 from ruamel import yaml
+from ruamel.yaml.comments import CommentedMap
 
 
 class ManifestItem:
@@ -20,8 +21,8 @@ class RootManifest:
     the current directory.
     """
 
-    def __init__(self, path: str = "vault.yml", load: bool = True):
-        self.path = os.path.abspath(path)
+    def __init__(self, path: str = None, load: bool = True):
+        self.path = os.path.abspath(path) if path else None
         self._backing = OrderedDict()
 
         if load:
@@ -55,3 +56,12 @@ class RootManifest:
 
     def list_secrets_backend_names(self) -> List[str]:
         return [name.strip("/") for name in self._backing.get("secrets_backends", {})]
+
+    def yaml(self) -> str:
+        cs = CommentedMap()
+        cs.update(self._changes)
+        return yaml.round_trip_dump(cs)
+
+    def save(self) -> None:
+        with open(self.path, "w") as f:
+            f.write(self.yaml())
