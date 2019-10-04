@@ -57,6 +57,19 @@ class RootManifest:
     def list_secrets_backend_names(self) -> List[str]:
         return [name.strip("/") for name in self._backing.get("secrets_backends", {})]
 
+    def add_auth_method(self, name: str, manifest: ManifestItem) -> None:
+        converted = manifest.convert()
+        if not converted:
+            return
+
+        if "auth_methods" not in self._changes:
+            self._changes["auth_methods"] = {}
+
+        name = name.strip("/")
+        new_dict = self._changes["auth_methods"].get(name, {})
+        new_dict.update(converted)
+        self._changes["auth_methods"][name] = new_dict
+
     def yaml(self) -> str:
         cs = CommentedMap()
         cs.update(self._changes)

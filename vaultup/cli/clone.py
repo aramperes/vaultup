@@ -5,7 +5,7 @@ import hvac
 from colorama import Fore, Style
 
 from vaultup.cli import Action
-from vaultup.manifests import RootManifest, SecretsEngineManifest
+from vaultup.manifests import RootManifest, SecretsEngineManifest, AuthMethodManifest
 
 
 class CloneAction(Action):
@@ -34,11 +34,18 @@ class CloneAction(Action):
 
     def exec(self, ns: argparse.Namespace) -> None:
         client = hvac.Client(url=ns.url)
-        client.token = input(
-            f"{Fore.BLUE}{Style.BRIGHT}Root token for "
-            f"{Fore.YELLOW}{ns.url}"
-            f"{Fore.BLUE}: "
-            f"{Style.RESET_ALL}")
+
+        try:
+            client.token = input(
+                f"{Fore.BLUE}{Style.BRIGHT}Root token for "
+                f"{Fore.YELLOW}{ns.url}"
+                f"{Fore.BLUE}: "
+                f"{Style.RESET_ALL}")
+        except KeyboardInterrupt:
+            print()
+            exit(1)
+            return
+
         if not client.is_authenticated():
             print(f"{Fore.RED}{Style.BRIGHT}Invalid root token."
                   f"{Style.RESET_ALL}", file=sys.stderr)
@@ -50,16 +57,14 @@ class CloneAction(Action):
         print(f"Token valid, cloning {ns.url}...")
 
         secret_backends = client.sys.list_mounted_secrets_engines()["data"]
-
-        # Deleted secrets engines
-        for name in manifest.list_secrets_backend_names():
-            if name not in SecretsEngineManifest.IGNORED_SECRET_TYPES \
-                    and name not in map(lambda name: name.strip("/"), secret_backends.keys()):
-                manifest.delete_secrets_backend(name)
+        auth_methods = client.sys.list_auth_methods()["data"]
 
         # Modified and added secrets engines
         for name, backend in secret_backends.items():
             manifest.add_secrets_backend(name, SecretsEngineManifest(backend))
+
+        for name, method in auth_methods.items():
+            manifest.add_auth_method(name, AuthMethodManifest(method))
 
         if manifest.path:
             manifest.save()
