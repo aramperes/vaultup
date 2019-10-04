@@ -1,6 +1,10 @@
 import argparse
+import sys
+
+import hvac
 
 from vaultup.cli import Action
+from vaultup.manifests import RootManifest, SecretsEngineManifest
 
 
 class CloneAction(Action):
@@ -25,11 +29,6 @@ class CloneAction(Action):
                 remote configuration.
     """
 
-    def __init__(self):
-        self.url = ""
-        self.clean = False
-        self.preview = False
-
     def create_parser(self, parser: argparse._SubParsersAction) -> None:
         action = parser.add_parser("clone",
                                    help="Create manifests locally by scanning the configuration of a remote "
@@ -46,7 +45,26 @@ class CloneAction(Action):
                             help="Shows a preview of the local manifest changes, "
                                  "without applying them.")
 
-    def parse(self, ns: argparse.Namespace) -> None:
-        self.url = ns.url
-        self.clean = ns.clean
-        self.preview = ns.preview
+    def exec(self, ns: argparse.Namespace) -> None:
+        client = hvac.Client(url=ns.url)
+        client.token = input(f"Root token for {ns.url}: ")
+        if not client.is_authenticated():
+            print("Invalid root token.", file=sys.stderr)
+            exit(1)
+            return
+
+        manifest = RootManifest(load=(not ns.clean))
+
+        secret_backends = client.sys.list_mounted_secrets_engines()["data"]
+
+        # Deleted secrets engines
+        for name in manifest.list_secrets_backend_names():
+            if name not in SecretsEngineManifest.IGNORED_SECRET_TYPES \
+                    and name not in map(lambda name: name.strip("/"), secret_backends.keys()):
+                manifest.delete_secrets_backend(name)
+
+        # Modified and added secrets engines
+        for name, backend in secret_backends.items():
+            manifest.add_secrets_backend(name, SecretsEngineManifest(backend))
+
+        # TODO: Pretty print difference

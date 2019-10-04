@@ -25,10 +25,6 @@ class StartAction(Action):
                 Starts the local instance on port 3000.
     """
 
-    def __init__(self):
-        self.edit = False
-        self.port = -1
-
     def create_parser(self, parser: argparse._SubParsersAction) -> None:
         action = parser.add_parser("start",
                                    help="Launches a local Vault instance, "
@@ -47,6 +43,5 @@ class StartAction(Action):
                                  "created to monitor all changes, and a prompt "
                                  "to compare/apply the changes will be shown at the end.")
 
-    def parse(self, ns: argparse.Namespace) -> None:
-        self.edit = ns.edit
-        self.port = ns.port
+    def exec(self, ns: argparse.Namespace) -> None:
+        print("Start:", ns)

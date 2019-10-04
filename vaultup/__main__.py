@@ -9,7 +9,4 @@ if __name__ == '__main__':
 
     ns = cli.parser.parse_args()
     action = cli.actions[ns.action]
-    action.parse(ns)
-
-    print(action.__dict__)
-    # TODO: Execute the action
+    action.exec(ns)

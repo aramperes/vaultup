@@ -9,7 +9,7 @@ class Action:
     def create_parser(self, parser: argparse._SubParsersAction) -> None:
         raise NotImplementedError()
 
-    def parse(self, ns: argparse.Namespace) -> None:
+    def exec(self, ns: argparse.Namespace) -> None:
         raise NotImplementedError()
 
 

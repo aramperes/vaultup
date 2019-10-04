@@ -25,11 +25,6 @@ class PushAction(Action):
                 remote instance to its bare state.
     """
 
-    def __init__(self):
-        self.url = ""
-        self.clean = False
-        self.preview = False
-
     def create_parser(self, parser: argparse._SubParsersAction) -> None:
         action = parser.add_parser("push",
                                    help="Applies the differences between the local manifests "
@@ -48,7 +43,5 @@ class PushAction(Action):
                             help="Shows a preview of the remote changes, "
                                  "without applying them.")
 
-    def parse(self, ns: argparse.Namespace) -> None:
-        self.url = ns.url
-        self.clean = ns.clean
-        self.preview = ns.preview
+    def exec(self, ns: argparse.Namespace) -> None:
+        print("Push:", ns)

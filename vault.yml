@@ -1,0 +1,8 @@
+secrets_backends:
+  kv:
+    description: This is not a simple kv engine.
+    type: kv
+
+  deleted:
+    description: This engine does not exist anymore
+    type: kv
