@@ -1,5 +1,6 @@
 import argparse
 import sys
+from pprint import pprint
 
 import hvac
 from colorama import Fore, Style
@@ -54,17 +55,24 @@ class CloneAction(Action):
 
         manifest = RootManifest(path=ns.output, load=False)
 
-        print(f"Token valid, cloning {ns.url}...")
+        print(f"{Fore.BLUE}Cloning {ns.url}...{Fore.RESET}", end="\r")
 
         secret_backends = client.sys.list_mounted_secrets_engines()["data"]
         auth_methods = client.sys.list_auth_methods()["data"]
+        pprint(client.auth.ldap)
 
-        # Modified and added secrets engines
+        # Secrets engines (mounts)
+        manifest.create_secrets_backend_section()
         for name, backend in secret_backends.items():
-            manifest.add_secrets_backend(name, SecretsEngineManifest(backend))
+            manifest.add_secrets_backend(name, SecretsEngineManifest(client, name, backend))
 
+        # Auth methods
+        manifest.create_auth_method_section()
         for name, method in auth_methods.items():
-            manifest.add_auth_method(name, AuthMethodManifest(method))
+            manifest.add_auth_method(name, AuthMethodManifest(client, name, method))
+
+        manifest.set_header(f"vaultup manifest for {ns.url}\n"
+                            f"Generated using the 'clone' action.")
 
         if manifest.path:
             manifest.save()
