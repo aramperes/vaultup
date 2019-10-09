@@ -1,10 +1,10 @@
 import argparse
 import sys
-from pprint import pprint
 
 import hvac
 from colorama import Fore, Style
 
+from vaultup import is_remote_compatible
 from vaultup.cli import Action
 from vaultup.manifests import RootManifest, SecretsEngineManifest, AuthMethodManifest
 
@@ -56,10 +56,13 @@ class CloneAction(Action):
         manifest = RootManifest(path=ns.output, load=False)
 
         print(f"{Fore.BLUE}Cloning {ns.url}...{Fore.RESET}", end="\r")
+        remote_version = client.sys.read_health_status(method="GET")["version"]
+        if not is_remote_compatible(remote_version):
+            print(f"{Fore.RED}Incompatible Vault version: {remote_version}.{Fore.RESET}")
+            exit(1)
 
         secret_backends = client.sys.list_mounted_secrets_engines()["data"]
         auth_methods = client.sys.list_auth_methods()["data"]
-        pprint(client.auth.ldap)
 
         # Secrets engines (mounts)
         manifest.create_secrets_backend_section()
@@ -72,7 +75,8 @@ class CloneAction(Action):
             manifest.add_auth_method(name, AuthMethodManifest(client, name, method))
 
         manifest.set_header(f"vaultup manifest for {ns.url}\n"
-                            f"Generated using the 'clone' action.")
+                            f"Generated using the 'clone' action.\n"
+                            f"Vault version: {remote_version}")
 
         if manifest.path:
             manifest.save()
